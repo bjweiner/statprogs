@@ -1,0 +1,110 @@
+
+Readme file for mlsfit.f
+
+Benjamin Weiner, August 2006
+
+Introduction:
+
+MLSFIT is a Fortran program that fits straight lines y = A + Bx to
+(X,Y) data with errors in both coordinates and allows for intrinsic
+scatter in the Y-coordinate of the linear relation - scatter beyond
+that attributable to observational errors.  The algorithm is derived
+in the Appendix of Weiner et al. 2006 (ApJ, 653, 1049;
+astro-ph/0609091); see that paper for further background and
+references.
+
+For more information about least-squares fitting, please
+see that Appendix, the Readme file for the LSTSQ program
+that I also distribute, and you might want to look at 
+Chapter 15, "Modeling of Data," in Numerical Recipes.
+
+To compile MLSFIT:
+
+Extract the tar file to get Readme, source, Makefile, and
+Linux binaries.  On a linux system you should be able to run
+the binaries, but you need to setenv PGPLOT_DIR [local-pgplot-dir]
+or PGPLOT won't find its fonts.  To compile, you need to
+edit the Makefile to point at your local copy of the PGPLOT 
+library.
+
+Input:
+
+You will need an input file, a text file with one data point per
+line.  The columns are X, X-error, Y, Y-error.
+
+The file does not have to be formatted but lines must be <80 chars long.
+
+Note that due to the way the program does convolutions, it may not
+work well if your data has a steep slope of Y on X.  If this is the
+case, you should exchange X and Y so that the slope is shallow.
+Also, the algorithm models intrinsic scatter in the Y coordinate,
+so if your data has selection limits on one coordinate, make that
+coordinate X.
+If your data has a lot of intrinsic scatter in a coordinate _and_
+a steep slope in that coordinate, you are likely to have problems
+fitting with any algorithm.  If you have selection limits in X
+and a steep slope of Y on X, you are trying to do a problem that
+is very likely ill-conditioned.
+
+Running the program:
+
+MLSFIT prompts you for a bunch of parameters, in order:
+
+1. Zeropoint to subtract from X before fitting
+2. PGPLOT graphics device
+3. Name of your data file
+4. Grid to search in intercept A: Amin, Amax, dA
+5. Grid to search in slope B:     Bmin, Bmax, dB
+6. Grid to search in scatter D:   Dmin, Dmax, dD
+
+As an example of this, for the included sample datafile, try typing:
+
+mlsfit
+0
+/xs
+mlsfit.testdata
+-0.5 2 0.05
+-0.5 0.5 0.01
+0 0.26 0.05
+
+At the end of this you should get a line like:
+  Overall minimum: 
+  0.700000048 -0.0400000103  0.150000006  50  63.9507065
+indicating a best fit of A = 0.70, B = -0.04, and scatter = 0.15,
+on 50 datapoints, with chi-squared 63.95.
+
+The program loops over the values of the scatter, here going from 0 to
+0.25 by 0.05.  At each value of the scatter it goes over a grid in A
+and B, computing the probability of that model y = A + Bx.  At each
+scatter, it makes two plots.  The first is the probability contours in
+the A-B plane, with the best A,B and the nominal errors on A and B.
+The second plot shows the X,Y data with the best relation and the
+1-sigma scatter lines overplotted.
+
+At each value of the scatter, MLSFIT spews out a bunch of output,
+which will be cleaned up and documented slightly better in future 
+versions.  The most important line is probably the one that begins
+"Best a,b and err" which gives best values and errorbars at each
+value of scatter:
+  A_best A_lower-error A_upper-error  B_best B_lower-error B_upper-error
+Note that the errorbars are found by determining what part of the grid
+contains 68% of the probability.  If you use a coarse grid, the errors
+will not be very accurate and the error-finding routine will occasionally
+fail.
+
+At the very end, MLSFIT prints out the "Overall minimum," the best fit
+over all values of the scatter.  The contents of this line are:
+  A_best B_best Best_scatter N_datapoints Chi-squared-best
+
+If the best chi-squared is significantly greater than N_datapoints,
+you could rerun with a finer grid to make a more accurate localization
+of the best fit.
+
+MLSFIT as provided is a bit more cumbersome (and slower) than 
+LSTSQ-with-intrinsic-scatter, but does a similar fit.  However,
+MLSFIT can be modified to handle non-Gaussian errors or scatter
+and other such issues.  The way to do this is by modifying the
+subroutine "calcprob1".  A few modified versions are buried
+in the source file.
+
+
