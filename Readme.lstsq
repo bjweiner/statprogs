@@ -1,0 +1,152 @@
+
+Readme file for lstsq.f and lstsq_bootstrap.f
+
+Benjamin Weiner, July 2006
+
+Introduction:
+
+The LSTSQ programs are a simple front end to least-squares
+routines for fitting straight lines to (X,Y) data with errors in
+none, one, or both coordinates.  The fitting routines themselves
+are from Numerical Recipes, which means you need a copy of the NR
+routines to compile them from source.  You also need the PGPLOT
+library for plotting.  Chapter 15, "Modeling of Data," in NR
+edition 2, describes the fitting subroutines in greater detail
+and should be read by everyone who uses them.  (Please note
+that while I think the NR code license is oppressively cumbersome,
+the book is quite useful as an introduction to the techniques.)
+
+These programs are provided freely to allow better parameter
+fitting for all.  They are licensed under the GNU GPL; you may
+modify and redistribute them, but must retain the copyright notice.
+The fit algorithms are described in Numerical Recipes ch. 15; the
+desirability and derivation of an intrinsic scatter error-term
+are discussed in Weiner et al. 2006 (ApJ, 653, 1049; astro-ph/0609091);
+if you rely heavily on this fitting method, refer to that 
+paper as background.
+
+To compile:
+
+Extract the tar file to get Readme, source, Makefile, and
+Linux binaries.  On a linux system you should be able to run
+the binaries, but you need to setenv PGPLOT_DIR [local-pgplot-dir]
+or PGPLOT won't find its fonts.  To compile, you need to
+edit the Makefile to point at your local copies of pgplot 
+and Numerical Recipes libraries.
+
+Input:
+
+The input format for lstsq is a text file with one data point per line.
+Columns are, for the choices of problem type:
+0.  X, Y
+1.  X, Y, Y-error
+2.  X, X-error, Y, Y-error
+3.  X, X-error, Y, Y-error
+
+The file does not have to be formatted but lines must be <80 chars long.
+Lines that begin with '#' are ignored.  Note that due to max 
+array dimensions in fitexy.f, fitting with errors on both X and Y
+only works for 1000 points or fewer.
+
+When you run lstsq, it asks you whether you want to use errors
+on: none; Y; X and Y; or X and Y with intrinsic scatter added as
+an extra component of Y-error.  Type 0, 1, 2, or 3 for your choice,
+then the data file name.  [If you chose 3, you then also type
+the scatter to add.]  lstsq then plots the data and asks what
+X range you want to use in the fit, plots the fit, and prints the
+best-fit values of A and B, the intercept and slope of the 
+best-fit line.
+
+lstsq_bootstrap operates the same way but after the fit, it
+allows you to do N fits to bootstrap resamples (with replacement)
+of the data set.  This is a good way of estimating errors
+on the fitted intercept and slope, especially if your error bars 
+are questionable or the best fit has a reduced chi-squared > 1 
+(i.e. the sample has intrinsic scatter or your error bars are 
+too small).  
+
+Output:
+
+lstsq writes an output file, lstsq.out, with data and fit values.
+lstsq_bootstrap also writes a lstsq_bootstrap.out file with the
+fitted values of A_boot and B_boot for each bootstrap resample.  
+It is useful to plot A_boot and B_boot versus each other to
+see the covariance of fitted parameters.  I strongly suggest
+subtracting a constant zeropoint from X to make the mean/median 
+X close to zero; this greatly reduces covariance between A and B.
+For example, if you are fitting to radius as a function of 
+magnitude and the magnitudes are all between 18 and 22, subtract
+20 from the mags so you are fitting radius as a function of
+(magnitude-20).
+
+Fitting with scatter:
+
+Choice 3 allows you to add a component of "intrinsic" scatter
+to the fit.  This is unfortunately not discussed in Numerical
+Recipes.  Many relations - for example the Tully-Fisher relation,
+or black hole mass vs. galaxy properties - have scatter beyond
+the observational errors, i.e. the "true" relation is not perfect.
+This causes at least two problems when fitting lines to data.
+
+1. The first is that the fitted line has chi-sq/N>1, sometimes
+by a lot.  This indicates that the model (perfect line) is not
+a good model of the data, and in practice, means that the 
+error estimates on the fitted parameters a and b will be too small.
+The true errors can be estimated by bootstrapping, but that doesn't
+fix problem 2.
+
+2. The second problem is that, because the model is not a good
+model, it can be biased.  For example, if there is a fair amount
+of intrinsic scatter (and especially if there are selection limits
+on the X variable) it increases the range in Y of the data.  Fitting
+without taking scatter into account, the algorithm will favor
+a steeper slope of Y/X to account for the range in Y.  This can
+be shown/tested for various fit algorithms with Monte Carlo simulations
+(see Weiner et al. 2006 for an example; also discussed in Novak
+et al. 2006).
+
+One cure for this problem is to add the intrinsic scatter
+as an extra error, which is added in quadrature to the Y-error.
+The intrinsic scatter is determined such that total
+chisq/N = 1.
+Some discussions of this issue are in Tremaine et al.
+(2002, ApJ, 574, 740) and Novak et al. (2006, ApJ, 637, 96).
+The underlying assumptions and a derivation of the basis 
+for adding scatter to the Y-error are given in Weiner et al. 
+(2006, ApJ, 653, 1049; astro-ph/0609091) and references therein.
+A different approach to fitting with scatter was given
+by Akritas & Bershady (1996, ApJ, 470, 706), although the
+preceding papers found some issues with that method.
+
+To conclude, if your relation has intrinsic scatter,
+fitting with the scatter term is a good thing to do;
+use trial and error to figure out what scatter you need
+to make reduced chi-squared = 1.  HOWEVER, if you do this,
+if your sample has selection limits, make the limited
+variable the X variable.  For example if one of the
+variables is magnitude and there is a mag limit, make magnitude
+X and add the scatter to Y.  See Weiner et al. (2006)
+for more discussion of these effects (also see papers
+that discuss fitting the "inverse Tully-Fisher" relation,
+i.e. velocity as function of magnitude, and discuss
+"incompleteness bias," e.g. Giovanelli et al 1997, AJ 113, 53).
+
+Summary:
+
+- Figure out your variables and the errors
+- Subtract a zeropoint so the X values average ~ zero to reduce
+  covariance
+- Fit
+- Use bootstrapping to estimate errors and covariance
+- If the best fit has chisq/N > 1, consider adding an intrinsic
+  scatter term
+- If you need/add an intrinsic scatter term, be careful about the
+  effect of selection limits.  If you have selection limits on one
+  variable, make that variable X.  Even if you don't need the
+  intrinsic scatter, if you have big errors on the coordinate
+  that has a selection limit, the fit can be biased.
+
+
+
+
+

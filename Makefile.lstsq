@@ -1,0 +1,45 @@
+
+# This is a Makefile for the programs lstsq.f and lstsq_bootstrap.f
+# You need copies of the PGPLOT and Numerical Recipes libraries
+# to compile them.  PGPLOT is available for free download from
+# somewhere at astro.caltech.edu and is already installed at many
+# astronomy departments.  You will also want to do
+#   setenv PGPLOT_DIR [path-to-pgplot]
+# e.g. /usr/local/pgplot or wherever it's installed.  If you
+# don't do this, pgplot will not be able to find its fonts.
+
+# Numerical Recipes is available under a rather restrictive license.
+# To make the numrec2.a file, cd to the directory with all the
+# subroutines, compile them all to *.o files, then: ar rs numrec2.a *.o
+# Note, only a few NR routines are actually used, so you really 
+# only need those: fit.f, fitexy.f, sort.f and ran1.f, plus
+# any subroutines they call.
+
+# lstsq.f and lstsq_bootstrap.f are copyrighted and released under the GNU GPL.
+# You may modify them freely for your own use; if you redistribute them
+# or the modified versions, you must retain the copyright notice.
+# (C) Benjamin Weiner, July 2006.
+# If you have comments or suggestions on the programs, please contact me,
+# bjw@astro.umd.edu
+
+
+# sample definitions:
+# For linux: 
+#PGPLOT = -L/usr/X11R6/lib -lX11 [path-to-pgplot]/libpgplot.a
+# For Solaris:
+#PGPLOT = [path-to-pgplot]/libpgplot.a -lX11 -lsocket -lnsl
+
+#NUMREC = [path-to-Numerical-Recipes]/recipes_f/recipes/numrec2.a
+
+# change to g77 or other compiler as needed
+FC=f77
+
+# compile with make -f Makefile.lstsq lstsq
+# and make -f Makefile.lstsq lstsq_bootstrap
+
+lstsq: lstsq.f
+	$(FC) -O -o lstsq lstsq.f $(PGPLOT) $(NUMREC)
+
+lstsq_bootstrap: lstsq_bootstrap.f
+	$(FC) -O -o lstsq_bootstrap lstsq_bootstrap.f $(PGPLOT) $(NUMREC)
+
